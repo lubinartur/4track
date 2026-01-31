@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mapTmdbGenreIdsToNames } from '@/lib/tmdbGenres';
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 
-interface TMDBMovieResult {
+interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+interface TMDBMovieDetails {
   id: number;
   title: string;
   release_date?: string;
@@ -12,10 +16,10 @@ interface TMDBMovieResult {
   poster_path?: string | null;
   backdrop_path?: string | null;
   vote_average?: number;
-  genre_ids?: number[];
+  genres: TMDBGenre[];
 }
 
-interface TMDBTVResult {
+interface TMDBTVDetails {
   id: number;
   name: string;
   first_air_date?: string;
@@ -23,11 +27,7 @@ interface TMDBTVResult {
   poster_path?: string | null;
   backdrop_path?: string | null;
   vote_average?: number;
-  genre_ids?: number[];
-}
-
-interface TMDBResponse {
-  results: (TMDBMovieResult | TMDBTVResult)[];
+  genres: TMDBGenre[];
 }
 
 type TMDBKeyType = 'v3' | 'v4';
@@ -59,31 +59,40 @@ function buildTMDBUrl(endpoint: string, keyType: TMDBKeyType, apiKey: string, pa
 }
 
 function getTMDBHeaders(keyType: TMDBKeyType, apiKey: string): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
   if (keyType === 'v4') {
-    return {
-      'Authorization': `Bearer ${apiKey}`,
-      'Accept': 'application/json',
-    };
-  } else {
-    // v3: DO NOT include Authorization header
-    return {
-      'Accept': 'application/json',
-    };
+    headers['Authorization'] = `Bearer ${apiKey}`;
   }
+  
+  return headers;
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const query = searchParams.get('q');
-  const type = searchParams.get('type'); // 'movie' or 'tv'
+  const sourceId = searchParams.get('sourceId');
+  const domain = searchParams.get('domain'); // 'film' or 'series'
 
-  if (!query || !type) {
-    return NextResponse.json({ error: 'Missing q or type parameter' }, { status: 400 });
+  if (!sourceId || !domain) {
+    return NextResponse.json({ error: 'Missing sourceId or domain parameter' }, { status: 400 });
   }
 
-  if (type !== 'movie' && type !== 'tv') {
-    return NextResponse.json({ error: 'Invalid type. Must be movie or tv' }, { status: 400 });
+  if (domain !== 'film' && domain !== 'series') {
+    return NextResponse.json({ error: 'Invalid domain. Must be film or series' }, { status: 400 });
   }
+
+  // Validate sourceId: must be numeric for TMDB API
+  if (!/^\d+$/.test(sourceId)) {
+    return NextResponse.json(
+      { error: 'invalid sourceId; expected numeric tmdb id' },
+      { status: 400 }
+    );
+  }
+
+  // Map domain to TMDB type
+  const type = domain === 'film' ? 'movie' : 'tv';
 
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) {
@@ -97,11 +106,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const url = buildTMDBUrl(`search/${endpoint}`, keyType, apiKey, {
-      query: query,
-      include_adult: 'false',
+    const url = buildTMDBUrl(`${endpoint}/${sourceId}`, keyType, apiKey, {
       language: 'en-US',
-      page: '1',
     });
     
     const headers = getTMDBHeaders(keyType, apiKey);
@@ -135,41 +141,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data: TMDBResponse = await response.json();
+    const data: TMDBMovieDetails | TMDBTVDetails = await response.json();
+    const isMovie = type === 'movie';
+    const movieDetails = data as TMDBMovieDetails;
+    const tvDetails = data as TMDBTVDetails;
 
-    // Normalize results
-    const normalized = data.results.map((result) => {
-      const isMovie = type === 'movie';
-      const movieResult = result as TMDBMovieResult;
-      const tvResult = result as TMDBTVResult;
+    const dateStr = isMovie ? movieDetails.release_date : tvDetails.first_air_date;
+    const year = dateStr ? new Date(dateStr).getFullYear() : undefined;
 
-      const dateStr = isMovie ? movieResult.release_date : tvResult.first_air_date;
-      const year = dateStr ? new Date(dateStr).getFullYear() : undefined;
+    // Extract genre names directly from genres array
+    const genres = data.genres.map((g) => g.name);
 
-      return {
-        source: 'tmdb' as const,
-        sourceId: String(result.id),
-        domain: (isMovie ? 'film' : 'series') as 'film' | 'series',
-        title: isMovie ? movieResult.title : tvResult.name,
-        year,
-        overview: result.overview || undefined,
-        posterUrl: result.poster_path
-          ? `${TMDB_IMAGE_BASE}${result.poster_path}`
-          : undefined,
-        backdropUrl: result.backdrop_path
-          ? `${TMDB_IMAGE_BASE.replace('/w500', '/w780')}${result.backdrop_path}`
-          : undefined,
-        genres: [], // No genre lookup yet
-        voteAverage: result.vote_average,
-      };
-    });
+    // Normalize response
+    const normalized = {
+      source: 'tmdb' as const,
+      sourceId: String(data.id),
+      domain: (isMovie ? 'film' : 'series') as 'film' | 'series',
+      title: isMovie ? movieDetails.title : tvDetails.name,
+      year,
+      overview: data.overview || undefined,
+      posterUrl: data.poster_path
+        ? `${TMDB_IMAGE_BASE}${data.poster_path}`
+        : undefined,
+      backdropUrl: data.backdrop_path
+        ? `${TMDB_IMAGE_BASE.replace('/w500', '/w780')}${data.backdrop_path}`
+        : undefined,
+      genres,
+      voteAverage: data.vote_average ?? undefined,
+    };
 
     return NextResponse.json(normalized);
   } catch (error) {
-    console.error('TMDB search error:', error);
+    console.error('TMDB details error:', error);
     return NextResponse.json(
       {
-        error: 'Failed to search TMDB',
+        error: 'Failed to fetch TMDB details',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

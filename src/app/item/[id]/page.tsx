@@ -1,17 +1,114 @@
 'use client';
 
+import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ItemHero from '@/components/item/ItemHero';
-import RatingBlock from '@/components/item/RatingBlock';
-import TagChip from '@/components/item/TagChip';
-import WhyItWorked from '@/components/item/WhyItWorked';
+import ItemAbout from '@/components/item/ItemAbout';
+import UserRating from '@/components/item/UserRating';
 import { useItemView } from '@/db/hooksItems';
+import { upsertEntry, deleteEntry } from '@/repos/entriesRepo';
 
 export default function ItemPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
   const { item, loading } = useItemView(id);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState(false);
+
+  const handleWatched = useCallback(async () => {
+    if (!item || isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const now = Date.now();
+      await upsertEntry({
+        id: item.id,
+        domain: item.domain,
+        status: 'watched',
+        watchedAt: now,
+        userRating: item.entry?.userRating, // Preserve existing rating
+        whyTags: item.entry?.whyTags || [],
+      });
+      // useLiveQuery will automatically refresh
+    } catch (error) {
+      console.error('Error marking as watched:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [item, isUpdating]);
+
+  const handleQueued = useCallback(async () => {
+    if (!item || isUpdating) return;
+    setIsUpdating(true);
+    try {
+      const now = Date.now();
+      await upsertEntry({
+        id: item.id,
+        domain: item.domain,
+        status: 'queued',
+        queuedAt: now,
+        userRating: item.entry?.userRating, // Preserve existing rating
+        whyTags: item.entry?.whyTags || [],
+      });
+      // useLiveQuery will automatically refresh
+    } catch (error) {
+      console.error('Error adding to queue:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [item, isUpdating]);
+
+  const handleRatingChange = useCallback(async (rating: number) => {
+    if (!item || !item.entry || isUpdating) return;
+    setIsUpdating(true);
+    try {
+      await upsertEntry({
+        id: item.id,
+        domain: item.domain,
+        status: item.entry.status, // Preserve status
+        userRating: rating,
+        whyTags: item.entry.whyTags || [], // Preserve whyTags
+        watchedAt: item.entry.watchedAt, // Preserve watchedAt
+        queuedAt: item.entry.queuedAt, // Preserve queuedAt
+      });
+      // useLiveQuery will automatically refresh
+    } catch (error) {
+      console.error('Error updating rating:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [item, isUpdating]);
+
+  const handleRemove = useCallback(async () => {
+    if (!item || !item.entry || isUpdating) return;
+    
+    // First tap: show confirm state
+    if (!removeConfirm) {
+      setRemoveConfirm(true);
+      return;
+    }
+
+    // Second tap: delete
+    setIsUpdating(true);
+    try {
+      await deleteEntry(item.id);
+      // Navigate back or to films page
+      try {
+        router.back();
+      } catch {
+        router.push('/films');
+      }
+    } catch (error) {
+      console.error('Error removing item:', error);
+      setIsUpdating(false);
+      setRemoveConfirm(false);
+    }
+  }, [item, router, isUpdating, removeConfirm]);
+
+  // Reset remove confirm when item changes
+  useEffect(() => {
+    setRemoveConfirm(false);
+  }, [item?.id]);
 
   // Loading state
   if (loading) {
@@ -93,12 +190,8 @@ export default function ItemPage() {
   }
 
   // Render item data
-  const displayRating = item?.entry?.userRating != null
-    ? (item.entry.userRating % 1 === 0 
-        ? item.entry.userRating.toFixed(0) 
-        : item.entry.userRating.toFixed(1))
-    : null;
-  const displayTags = item?.entry?.whyTags?.slice(0, 3) || [];
+  const entryStatus = item?.entry?.status || null;
+  const userRating = item?.entry?.userRating;
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -134,20 +227,81 @@ export default function ItemPage() {
               {item?.title}
             </h1>
 
-            {/* Rating */}
-            {displayRating && <RatingBlock rating={displayRating} />}
+            {/* About: year, genres, rating, overview */}
+            {item && <ItemAbout item={item} />}
 
-            {/* Tags */}
-            {displayTags.length > 0 && (
-              <div className="mb-8 flex flex-wrap gap-2.5">
-                {displayTags.map((tag) => (
-                  <TagChip key={tag} label={tag} />
-                ))}
+            {/* Status Actions */}
+            {item && (
+              <div className="mt-6 flex gap-3">
+                {/* Primary button based on status */}
+                {entryStatus === 'watched' ? (
+                  <button
+                    onClick={() => {
+                      // Scroll to rating component
+                      const ratingEl = document.getElementById('user-rating');
+                      if (ratingEl) {
+                        ratingEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }}
+                    disabled={isUpdating}
+                    className="flex-1 px-4 py-3 rounded-xl border border-white/30 bg-white/10 text-white text-sm font-medium transition-colors hover:bg-white/[0.15] disabled:opacity-50"
+                  >
+                    Change rating
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleWatched}
+                    disabled={isUpdating}
+                    className="flex-1 px-4 py-3 rounded-xl border border-white/30 bg-white/10 text-white text-sm font-medium transition-colors hover:bg-white/[0.15] disabled:opacity-50"
+                  >
+                    Mark as watched
+                  </button>
+                )}
+
+                {/* Secondary button based on status */}
+                {entryStatus === null ? (
+                  <button
+                    onClick={handleQueued}
+                    disabled={isUpdating}
+                    className="flex-1 px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-white/60 text-sm font-medium transition-colors hover:bg-white/[0.08] hover:border-white/10 disabled:opacity-50"
+                  >
+                    Add to queue
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleRemove}
+                    disabled={isUpdating}
+                    className="flex-1 px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-white/50 text-sm font-medium transition-colors hover:text-white/80 hover:bg-white/[0.08] disabled:opacity-50"
+                  >
+                    {removeConfirm ? 'Remove?' : 'Remove'}
+                  </button>
+                )}
               </div>
             )}
 
-            {/* Why It Worked */}
-            <WhyItWorked />
+            {/* User Rating - only show when watched */}
+            {item?.entry?.status === 'watched' && (
+              <div id="user-rating">
+                <UserRating
+                  value={item.entry?.userRating ?? undefined}
+                  onChange={handleRatingChange}
+                />
+              </div>
+            )}
+
+            {/* Ratings display */}
+            <div className="mt-6 space-y-1">
+              {userRating != null && (
+                <div className="text-base text-white/90 font-medium">
+                  Your rating: {userRating % 1 === 0 ? userRating.toFixed(0) : userRating.toFixed(1)}
+                </div>
+              )}
+              {item?.voteAverage != null && (
+                <div className="text-sm text-white/50">
+                  TMDB: {item.voteAverage.toFixed(1)}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

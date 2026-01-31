@@ -9,5 +9,6 @@ export interface ItemView {
   posterUrl?: string;
   backdropUrl?: string;
   genres: string[];
+  voteAverage?: number; // TMDB rating (0-10 scale)
   entry?: Entry;
 }

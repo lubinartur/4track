@@ -59,31 +59,31 @@ function buildTMDBUrl(endpoint: string, keyType: TMDBKeyType, apiKey: string, pa
 }
 
 function getTMDBHeaders(keyType: TMDBKeyType, apiKey: string): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  
   if (keyType === 'v4') {
-    return {
-      'Authorization': `Bearer ${apiKey}`,
-      'Accept': 'application/json',
-    };
-  } else {
-    // v3: DO NOT include Authorization header
-    return {
-      'Accept': 'application/json',
-    };
+    headers['Authorization'] = `Bearer ${apiKey}`;
   }
+  
+  return headers;
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const query = searchParams.get('q');
-  const type = searchParams.get('type'); // 'movie' or 'tv'
+  const domain = searchParams.get('domain'); // 'film' or 'series'
 
-  if (!query || !type) {
-    return NextResponse.json({ error: 'Missing q or type parameter' }, { status: 400 });
+  if (!domain) {
+    return NextResponse.json({ error: 'Missing domain parameter' }, { status: 400 });
   }
 
-  if (type !== 'movie' && type !== 'tv') {
-    return NextResponse.json({ error: 'Invalid type. Must be movie or tv' }, { status: 400 });
+  if (domain !== 'film' && domain !== 'series') {
+    return NextResponse.json({ error: 'Invalid domain. Must be film or series' }, { status: 400 });
   }
+
+  // Map domain to TMDB type
+  const type = domain === 'film' ? 'movie' : 'tv';
 
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) {
@@ -96,10 +96,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const url = buildTMDBUrl(`search/${endpoint}`, keyType, apiKey, {
-      query: query,
-      include_adult: 'false',
+    const endpoint = `trending/${type}/week`;
+    const url = buildTMDBUrl(endpoint, keyType, apiKey, {
       language: 'en-US',
       page: '1',
     });
@@ -137,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     const data: TMDBResponse = await response.json();
 
-    // Normalize results
+    // Normalize results (same as search/recommendations route)
     const normalized = data.results.map((result) => {
       const isMovie = type === 'movie';
       const movieResult = result as TMDBMovieResult;
@@ -145,6 +143,9 @@ export async function GET(request: NextRequest) {
 
       const dateStr = isMovie ? movieResult.release_date : tvResult.first_air_date;
       const year = dateStr ? new Date(dateStr).getFullYear() : undefined;
+      
+      const genreIds = result.genre_ids ?? [];
+      const genres = mapTmdbGenreIdsToNames(genreIds);
 
       return {
         source: 'tmdb' as const,
@@ -159,17 +160,17 @@ export async function GET(request: NextRequest) {
         backdropUrl: result.backdrop_path
           ? `${TMDB_IMAGE_BASE.replace('/w500', '/w780')}${result.backdrop_path}`
           : undefined,
-        genres: [], // No genre lookup yet
-        voteAverage: result.vote_average,
+        genres,
+        voteAverage: result.vote_average ?? undefined,
       };
     });
 
     return NextResponse.json(normalized);
   } catch (error) {
-    console.error('TMDB search error:', error);
+    console.error('TMDB trending error:', error);
     return NextResponse.json(
       {
-        error: 'Failed to search TMDB',
+        error: 'Failed to fetch TMDB trending',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

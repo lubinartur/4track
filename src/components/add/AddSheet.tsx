@@ -6,9 +6,11 @@ import { useUIStore } from '@/store/ui.store';
 import { db } from '@/db/db';
 import { makeEntryId } from '@/db/entryId';
 import { makeLocalSourceIdFromTitle } from '@/lib/localSourceId';
-import { upsertEntry } from '@/repos/entriesRepo';
-import { upsertCatalogItems } from '@/repos/catalogRepo';
+import { LEGACY_FILMS_ENABLED } from '@/lib/flags';
+import { upsertEntry, getEntry } from '@/repos/entriesRepo';
+import { upsertCatalogItems, getCatalogItem } from '@/repos/catalogRepo';
 import { searchTmdb } from '@/providers/tmdbClient';
+import { useEntriesExist } from '@/db/hooksEntriesCheck';
 
 const IconFilm = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -86,6 +88,13 @@ export default function AddSheet() {
   const [searchResults, setSearchResults] = useState<TMDBSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchDomain, setSearchDomain] = useState<'film' | 'series'>('film');
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // Compute entryIds for search results and check if they exist
+  const entryIds = searchResults.map((result) => 
+    makeEntryId('tmdb', result.domain, String(result.sourceId))
+  );
+  const entriesMap = useEntriesExist(entryIds);
 
   // Debounce search query
   useEffect(() => {
@@ -135,18 +144,19 @@ export default function AddSheet() {
       const rating = parseFloat(filmForm.rating) || 0;
       const now = Date.now();
 
-      // Create film record (legacy - keep existing behavior)
-      const film = {
-        id: crypto.randomUUID(),
-        title,
-        rating,
-        tags: tagsArray,
-        createdAt: now,
-      };
+      // Legacy films write (disabled by default, enable via NEXT_PUBLIC_LEGACY_FILMS_ENABLED=true)
+      if (LEGACY_FILMS_ENABLED) {
+        const film = {
+          id: crypto.randomUUID(),
+          title,
+          rating,
+          tags: tagsArray,
+          createdAt: now,
+        };
+        await db.films.put(film);
+      }
 
-      await db.films.put(film);
-
-      // Additionally: write to new core tables (entries + catalog)
+      // Write to new core tables (entries + catalog)
       // Generate deterministic sourceId from title (no year field in form, so omit year)
       const sourceId = makeLocalSourceIdFromTitle(title);
       const entryId = makeEntryId('tmdb', 'film', sourceId);
@@ -196,16 +206,20 @@ export default function AddSheet() {
   };
 
   const handleTMDBResultAction = async (result: TMDBSearchResult, status: 'watched' | 'queued') => {
+    setActionError(null);
+    
     try {
       const now = Date.now();
-      const entryId = makeEntryId('tmdb', result.domain, result.sourceId);
+      // Force sourceId to be a string
+      const sourceId = String(result.sourceId);
+      const entryId = makeEntryId('tmdb', result.domain, sourceId);
 
-      // Upsert catalog item
+      // Ensure ALL async writes are awaited
       await upsertCatalogItems([
         {
           id: entryId,
           source: 'tmdb',
-          sourceId: result.sourceId,
+          sourceId: sourceId,
           domain: result.domain,
           title: result.title,
           year: result.year,
@@ -216,7 +230,6 @@ export default function AddSheet() {
         },
       ]);
 
-      // Upsert entry
       await upsertEntry({
         id: entryId,
         domain: result.domain,
@@ -226,14 +239,26 @@ export default function AddSheet() {
         // userRating and whyTags skipped for now
       });
 
-      // Close sheet and navigate to item page
+      // Temporary verification log (debug)
+      const e = await getEntry(entryId);
+      const c = await getCatalogItem(entryId);
+      console.log('verify saved', { entryId, hasEntry: !!e, hasCatalog: !!c });
+
+      // After successful writes: close sheet, then navigate, then refresh
       setShowFilmSearch(false);
       setSearchQuery('');
       setSearchResults([]);
       closeAdd();
+      
+      // Small delay to ensure writes are fully persisted
+      await new Promise(r => setTimeout(r, 50));
+      
       router.push(`/item/${entryId}`);
+      router.refresh();
     } catch (error) {
       console.error('Error adding item:', error);
+      setActionError(error instanceof Error ? error.message : 'Failed to add item. Please try again.');
+      // DO NOT navigate/close on error
     }
   };
 
@@ -256,7 +281,7 @@ export default function AddSheet() {
             </p>
           </div>
           <button
-            onClick={showFilmForm ? handleFilmCancel : showFilmSearch ? () => { setShowFilmSearch(false); setSearchQuery(''); setSearchResults([]); } : closeAdd}
+            onClick={showFilmForm ? handleFilmCancel : showFilmSearch ? () => { setShowFilmSearch(false); setSearchQuery(''); setSearchResults([]); setActionError(null); } : closeAdd}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-white/[0.03] text-white/50 transition-colors hover:bg-white/8 hover:text-white/70 ml-4"
             aria-label={showFilmForm || showFilmSearch ? 'Cancel' : 'Close add sheet'}
           >
@@ -294,6 +319,11 @@ export default function AddSheet() {
 
             {/* Results */}
             <div className="flex-1 overflow-y-auto px-6 py-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+              {actionError ? (
+                <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                  {actionError}
+                </div>
+              ) : null}
               {searchLoading ? (
                 <div className="text-center py-8 text-tertiary text-sm">Searching...</div>
               ) : !debouncedQuery.trim() ? (
@@ -325,21 +355,41 @@ export default function AddSheet() {
                         <div className="mb-3 text-[12px] text-secondary">
                           {result.year ? `${result.year} • ` : ''}{result.domain === 'film' ? 'Movie' : 'TV Series'}
                         </div>
-                        {/* Actions */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleTMDBResultAction(result, 'watched')}
-                            className="flex-1 rounded-full border border-white/5 bg-[#141420]/60 px-4 py-2 text-[13px] font-medium text-primary transition-colors hover:bg-white/[0.08] hover:border-white/10"
-                          >
-                            Watched
-                          </button>
-                          <button
-                            onClick={() => handleTMDBResultAction(result, 'queued')}
-                            className="flex-1 rounded-full border border-white/5 bg-white/[0.03] px-4 py-2 text-[13px] font-medium text-secondary transition-colors hover:bg-white/[0.08] hover:border-white/10"
-                          >
-                            Queue
-                          </button>
-                        </div>
+                        {/* Actions or Status */}
+                        {(() => {
+                          const entryId = makeEntryId('tmdb', result.domain, String(result.sourceId));
+                          const existingEntry = entriesMap.get(entryId);
+                          
+                          if (existingEntry) {
+                            // Show status pill for existing entries
+                            const status = existingEntry.status;
+                            return (
+                              <div className="flex gap-2">
+                                <div className="flex-1 rounded-full border border-white/5 bg-white/[0.03] px-4 py-2 text-center text-[13px] font-medium text-secondary">
+                                  {status === 'watched' ? 'Watched' : 'Queued'}
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          // Show action buttons for new entries
+                          return (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleTMDBResultAction(result, 'watched')}
+                                className="flex-1 rounded-full border border-white/5 bg-[#141420]/60 px-4 py-2 text-[13px] font-medium text-primary transition-colors hover:bg-white/[0.08] hover:border-white/10"
+                              >
+                                Watched
+                              </button>
+                              <button
+                                onClick={() => handleTMDBResultAction(result, 'queued')}
+                                className="flex-1 rounded-full border border-white/5 bg-white/[0.03] px-4 py-2 text-[13px] font-medium text-secondary transition-colors hover:bg-white/[0.08] hover:border-white/10"
+                              >
+                                Queue
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   ))}
@@ -353,6 +403,7 @@ export default function AddSheet() {
                 onClick={() => {
                   setShowFilmSearch(false);
                   setShowFilmForm(true);
+                  setActionError(null);
                 }}
                 className="w-full text-center text-[12px] font-medium text-white/50 transition-colors hover:text-white/70"
               >

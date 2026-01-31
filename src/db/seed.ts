@@ -2,6 +2,7 @@ import { db, Film, Session, Book, type Entry, type CatalogItem, type TasteSeed }
 import { makeEntryId } from './entryId';
 import { upsertEntry } from '@/repos/entriesRepo';
 import { upsertCatalogItems } from '@/repos/catalogRepo';
+import { migrateLegacyFilmsToEntries, isLegacyFilmsMigrationDone } from './migrations/migrateLegacyFilms';
 
 const seedFilms: Omit<Film, 'id' | 'createdAt'>[] = [
   {
@@ -170,6 +171,19 @@ export async function seedDatabase() {
 
       await db.tasteSeeds.bulkPut(tasteSeedsToAdd);
       console.log('Database seeded with', tasteSeedsToAdd.length, 'taste seeds');
+    }
+
+    // Run legacy films migration if not already done
+    if (!(await isLegacyFilmsMigrationDone())) {
+      try {
+        const result = await migrateLegacyFilmsToEntries();
+        if (result.migrated > 0 || result.skipped > 0) {
+          console.log(`Legacy films migration: ${result.migrated} migrated, ${result.skipped} skipped`);
+        }
+      } catch (error) {
+        console.error('Error during legacy films migration:', error);
+        // Don't throw - allow seeding to complete even if migration fails
+      }
     }
   } catch (error) {
     console.error('Error seeding database:', error);

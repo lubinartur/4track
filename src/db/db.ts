@@ -58,12 +58,18 @@ export interface CatalogItem {
   posterUrl?: string;
   backdropUrl?: string;
   genres: string[];
+  voteAverage?: number; // TMDB rating (0-10 scale)
 }
 
 export interface TasteSeed {
   entryId: string; // References Entry.id
   weight: 1 | 2 | 3;
   createdAt: number;
+}
+
+export interface MetaKV {
+  key: string;
+  value: string;
 }
 
 export class AppDatabase extends Dexie {
@@ -76,10 +82,11 @@ export class AppDatabase extends Dexie {
   entries!: Table<Entry>;
   catalog!: Table<CatalogItem>;
   tasteSeeds!: Table<TasteSeed>;
+  meta!: Table<MetaKV>;
 
   constructor() {
     super('4trackDB');
-    this.version(4).stores({
+    this.version(5).stores({
       // Legacy tables (keep existing indexes)
       films: 'id, title, rating, createdAt',
       sessions: 'id, title, createdAt',
@@ -88,6 +95,7 @@ export class AppDatabase extends Dexie {
       entries: 'id, domain, status, updatedAt, createdAt',
       catalog: 'id, source, domain, title',
       tasteSeeds: 'entryId, weight, createdAt',
+      meta: 'key',
     });
   }
 }

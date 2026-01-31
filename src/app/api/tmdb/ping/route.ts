@@ -62,18 +62,17 @@ export async function GET() {
     const response = await fetch(url, { headers });
 
     if (!response.ok) {
-      // Try to extract status_message from JSON response
       let errorDetails = '';
       try {
         const errorData = await response.json();
         if (errorData.status_message) {
           errorDetails = errorData.status_message;
-        } else {
-          errorDetails = await response.text();
         }
       } catch {
+        // If JSON parsing fails, try text
         try {
-          errorDetails = await response.text();
+          const text = await response.text();
+          errorDetails = text || 'Unknown error';
         } catch {
           errorDetails = 'Failed to read error response';
         }
@@ -83,7 +82,7 @@ export async function GET() {
         {
           error: 'TMDB request failed',
           status: response.status,
-          details: errorDetails.slice(0, 300),
+          ...(errorDetails && { details: errorDetails }),
         },
         { status: 502 }
       );

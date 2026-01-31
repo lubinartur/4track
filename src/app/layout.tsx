@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import BottomNav from "@/components/navigation/BottomNav";
-import ChatOverlay from "@/components/chat/ChatOverlay";
-import AddSheet from "@/components/add/AddSheet";
+import ClientShell from "./ClientShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,12 +28,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0b0b0f] text-white`}
       >
-        <div className="mx-auto max-w-md min-h-screen">
+        <ClientShell>
           {children}
-        </div>
-        <BottomNav />
-        <ChatOverlay />
-        <AddSheet />
+        </ClientShell>
       </body>
     </html>
   );
