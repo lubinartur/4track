@@ -9,54 +9,52 @@ const sharedSvgProps = {
   viewBox: '0 0 24 24',
   fill: 'none' as const,
   stroke: 'currentColor',
-  strokeWidth: 1.75,
+  strokeWidth: 2,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
 };
 
+// Home icon (lucide Home)
 export const IconLife = ({ isActive, className }: IconProps) => (
   <svg
     {...sharedSvgProps}
-    className={className || (isActive ? 'text-[#ff3d00]' : 'text-white/45')}
+    className={className || (isActive ? 'text-orange-500' : 'text-white/50')}
   >
-    <path d="M4 10.5 12 4l8 6.5" />
-    <path d="M6 10v9h12v-9" />
-    <path d="M10 19v-5h4v5" />
+    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 
+// Films icon (lucide LayoutGrid / Clapperboard)
 export const IconFilms = ({ isActive, className }: IconProps) => (
   <svg
     {...sharedSvgProps}
-    className={className || (isActive ? 'text-[#ff3d00]' : 'text-white/45')}
+    className={className || (isActive ? 'text-orange-500' : 'text-white/50')}
   >
-    <rect x="4" y="4" width="6" height="6" rx="1.5" />
-    <rect x="14" y="4" width="6" height="6" rx="1.5" />
-    <rect x="4" y="14" width="6" height="6" rx="1.5" />
-    <rect x="14" y="14" width="6" height="6" rx="1.5" />
+    <rect width="7" height="7" x="3" y="3" rx="1" />
+    <rect width="7" height="7" x="14" y="3" rx="1" />
+    <rect width="7" height="7" x="14" y="14" rx="1" />
+    <rect width="7" height="7" x="3" y="14" rx="1" />
   </svg>
 );
 
+// Sport icon (lucide placeholder - using Sparkles for now)
 export const IconSport = ({ isActive, className }: IconProps) => (
   <svg
     {...sharedSvgProps}
-    className={className || (isActive ? 'text-[#ff3d00]' : 'text-white/45')}
+    className={className || (isActive ? 'text-orange-500' : 'text-white/50')}
   >
-    <path d="M3 9v6" />
-    <path d="M7 7v10" />
-    <path d="M10 12h4" />
-    <path d="M14 7v10" />
-    <path d="M18 9v6" />
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
   </svg>
 );
 
+// Books icon (lucide BookOpen)
 export const IconBooks = ({ isActive, className }: IconProps) => (
   <svg
     {...sharedSvgProps}
-    className={className || (isActive ? 'text-[#ff3d00]' : 'text-white/45')}
+    className={className || (isActive ? 'text-orange-500' : 'text-white/50')}
   >
-    <path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 0-2 2V4Z" />
-    <path d="M5 18h11" />
-    <path d="M9 8h7" />
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
   </svg>
 );

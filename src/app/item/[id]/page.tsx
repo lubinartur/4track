@@ -7,6 +7,7 @@ import ItemAbout from '@/components/item/ItemAbout';
 import UserRating from '@/components/item/UserRating';
 import { useItemView } from '@/db/hooksItems';
 import { upsertEntry, deleteEntry } from '@/repos/entriesRepo';
+import { PageFade } from '@/components/motion/Motion';
 
 export default function ItemPage() {
   const params = useParams();
@@ -150,7 +151,8 @@ export default function ItemPage() {
   // Not found state
   if (!loading && !item) {
     return (
-      <div className="relative min-h-screen overflow-hidden">
+      <PageFade>
+        <div className="relative min-h-screen overflow-hidden">
         {/* Cinematic vignette background */}
         <div className="fixed inset-0 bg-[#0b0b0f]">
           <div 
@@ -186,6 +188,7 @@ export default function ItemPage() {
           </div>
         </div>
       </div>
+      </PageFade>
     );
   }
 
@@ -194,7 +197,8 @@ export default function ItemPage() {
   const userRating = item?.entry?.userRating;
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <PageFade>
+      <div className="relative min-h-screen overflow-hidden">
       {/* Cinematic vignette background */}
       <div className="fixed inset-0 bg-[#0b0b0f]">
         {/* Radial vignette - edges darker */}
@@ -305,6 +309,7 @@ export default function ItemPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </PageFade>
   );
 }

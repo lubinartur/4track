@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import BackButton from '@/components/layout/BackButton';
 
 interface ItemHeroProps {
   image?: string;
@@ -9,8 +9,6 @@ interface ItemHeroProps {
 }
 
 export default function ItemHero({ image, backdropUrl, posterUrl }: ItemHeroProps) {
-  const router = useRouter();
-  
   // Prefer: image (legacy) > backdropUrl > posterUrl > gradient
   const imageUrl = image || backdropUrl || posterUrl;
 
@@ -32,27 +30,9 @@ export default function ItemHero({ image, backdropUrl, posterUrl }: ItemHeroProp
       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0b0b0f] via-[#0b0b0f]/80 to-transparent" />
       
       {/* Back button */}
-      <button
-        onClick={() => router.back()}
-        className="absolute top-6 left-6 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/5 bg-black/40 backdrop-blur-sm transition-colors hover:bg-black/60"
-        aria-label="Back"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          className="text-white/80"
-        >
-          <path
-            d="M12 4L6 10L12 16"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
+      <div className="absolute top-6 left-6 z-10">
+        <BackButton fallbackPath="/films" />
+      </div>
     </div>
   );
 }

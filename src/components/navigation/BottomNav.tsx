@@ -29,7 +29,7 @@ export default function BottomNav() {
     <>
       {/* Floating capsule dock - contains only 4 icons, symmetric around viewport center */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-end justify-center pointer-events-none" style={{ paddingBottom: bottomOffset }}>
-        <div className="mx-auto flex items-center gap-2 rounded-full border border-white/5 bg-[#141420]/80 backdrop-blur-xl px-4 py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] pointer-events-auto">
+        <div className="mx-auto flex items-center gap-2 rounded-full border border-white/10 bg-black/20 backdrop-blur-xl px-4 py-2.5 shadow-[0_4px_24px_rgba(0,0,0,0.4)] pointer-events-auto">
           {/* Left side icons (Life, Films) */}
           {navItems.slice(0, 2).map((item) => {
             const active = isActive(item.href);
@@ -38,13 +38,9 @@ export default function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5"
+                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5"
               >
                 <IconComponent isActive={active} />
-                {/* Active dot indicator */}
-                {active && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ff3d00]" />
-                )}
               </Link>
             );
           })}
@@ -60,13 +56,9 @@ export default function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="relative flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5"
+                className="flex items-center justify-center w-10 h-10 rounded-full transition-colors hover:bg-white/5"
               >
                 <IconComponent isActive={active} />
-                {/* Active dot indicator */}
-                {active && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#ff3d00]" />
-                )}
               </Link>
             );
           })}

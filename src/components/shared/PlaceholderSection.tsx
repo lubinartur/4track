@@ -4,12 +4,12 @@ interface PlaceholderSectionProps {
 
 export default function PlaceholderSection({ title }: PlaceholderSectionProps) {
   return (
-    <div className="mb-12">
+    <div className="mb-16">
       <div className="mb-3">
-        <h2 className="text-[12px] font-medium uppercase tracking-[0.08em] text-white/50">
+        <h2 className="text-[14px] font-medium uppercase tracking-[0.12em] text-white/70">
           {title}
         </h2>
-        <p className="mt-1 text-[11px] text-white/40">
+        <p className="mt-1 text-[11px] text-white/50">
           Coming soon
         </p>
       </div>

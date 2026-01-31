@@ -4,18 +4,18 @@ import { useCallback } from 'react';
 import PageContainer from '@/components/layout/PageContainer';
 import LibraryListShell from '@/components/layout/LibraryListShell';
 import PosterGrid from '@/components/posters/PosterGrid';
-import { useQueuedFilms } from '@/db/hooksEntries';
+import { useWatchedFilms } from '@/db/hooksEntries';
 import { setEntryStatus, deleteEntry } from '@/repos/entriesRepo';
 import { PageFade } from '@/components/motion/Motion';
 
-export default function QueuePage() {
-  const { items, loading } = useQueuedFilms();
+export default function WatchedFilmsPage() {
+  const { items, loading } = useWatchedFilms();
 
-  const handleMarkWatched = useCallback(async (itemId: string) => {
+  const handleMoveToQueue = useCallback(async (itemId: string) => {
     try {
-      await setEntryStatus(itemId, 'watched');
+      await setEntryStatus(itemId, 'queued');
     } catch (error) {
-      console.error('Error marking as watched:', error);
+      console.error('Error moving to queue:', error);
     }
   }, []);
 
@@ -59,16 +59,16 @@ export default function QueuePage() {
       <PageContainer>
         <LibraryListShell 
           kicker="LIBRARY" 
-          title="Queue" 
+          title="Watched" 
           fallbackPath="/films"
         >
           <PosterGrid
             items={items}
-            mode="queue"
+            mode="watched"
             loading={loading}
-            onMarkWatched={handleMarkWatched}
+            onMoveToQueue={handleMoveToQueue}
             onRemove={handleRemove}
-            emptyMessage="Queue is empty — add something to watch next"
+            emptyMessage="No films yet"
           />
         </LibraryListShell>
       </PageContainer>

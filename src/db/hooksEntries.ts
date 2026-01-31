@@ -139,6 +139,7 @@ const fetchedTrendingDomains = new Set<string>();
 type LifePickResult = {
   safePick: ItemView | null;
   wildcard: ItemView | null;
+  extraPick: ItemView | null;
   reasons: { safe: string; wildcard: string };
   debug?: string;
 };
@@ -161,6 +162,7 @@ export function useLifePick(): LifePickResult {
         return {
           safePick: null,
           wildcard: null,
+          extraPick: null,
           reasons: { safe: '', wildcard: '' },
           debug: `stage=${stage} | no taste seeds`,
         };
@@ -173,6 +175,7 @@ export function useLifePick(): LifePickResult {
         return {
           safePick: null,
           wildcard: null,
+          extraPick: null,
           reasons: { safe: '', wildcard: '' },
           debug: `stage=${stage} | no valid seed item`,
         };
@@ -266,14 +269,32 @@ export function useLifePick(): LifePickResult {
           }
         }
 
-        return { safePick, wildcard, candidateCount, candidates };
+        // Find extraPick: third candidate (next after safePick and wildcard)
+        let extraPick: ItemView | null = null;
+        for (const catalogItem of catalog) {
+          if (!isValidCandidate(catalogItem, topSeedItemView.domain)) {
+            continue;
+          }
+          
+          if (safePick && catalogItem.id === safePick.id) {
+            continue;
+          }
+          if (wildcard && catalogItem.id === wildcard.id) {
+            continue;
+          }
+          
+          extraPick = buildItemView(catalogItem);
+          break;
+        }
+
+        return { safePick, wildcard, extraPick, candidateCount, candidates };
       };
 
       // 3) Attempt to find candidates in db.catalog excluding excludedIds
       stage = 'catalog scan';
       let allCatalog = await db.catalog.toArray();
       let result = findCandidates(allCatalog);
-      let { safePick, wildcard } = result;
+      let { safePick, wildcard, extraPick } = result;
       const initialCandidateCount = result.candidateCount;
       let isGuaranteePick = false;
 
@@ -324,6 +345,7 @@ export function useLifePick(): LifePickResult {
             result = findCandidates(allCatalog);
             safePick = result.safePick;
             wildcard = result.wildcard;
+            const extraPick = result.extraPick;
 
             // FINAL GUARANTEE PICK
             if (!safePick && result.candidates.length > 0) {
@@ -342,7 +364,8 @@ export function useLifePick(): LifePickResult {
         stage = 'picked safe';
         return {
           safePick,
-          wildcard,
+          wildcard: wildcard || null,
+          extraPick: extraPick || null,
           reasons: {
             safe: isGuaranteePick 
               ? 'General pick from your catalog'
@@ -387,6 +410,7 @@ export function useLifePick(): LifePickResult {
           result = findCandidates(allCatalog);
           safePick = result.safePick;
           wildcard = result.wildcard;
+          const extraPick = result.extraPick;
 
           // FINAL GUARANTEE PICK
           if (!safePick && result.candidates.length > 0) {
@@ -399,7 +423,8 @@ export function useLifePick(): LifePickResult {
             stage = 'picked safe';
             return {
               safePick,
-              wildcard,
+              wildcard: wildcard || null,
+              extraPick: extraPick || null,
               reasons: {
                 safe: isGuaranteePick
                   ? 'General pick from your catalog'
@@ -429,6 +454,7 @@ export function useLifePick(): LifePickResult {
       return {
         safePick: null,
         wildcard: null,
+        extraPick: null,
         reasons: { safe: '', wildcard: '' },
         debug: debugParts.join(' | '),
       };
