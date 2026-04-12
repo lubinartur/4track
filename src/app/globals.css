@@ -1,50 +1,37 @@
 @import "tailwindcss";
 
+/* Theme tokens reserved for later (dark + orange accent). No visual polish yet. */
 :root {
   --background: #0b0b0f;
   --foreground: #ffffff;
+  --accent: #f97316;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent: var(--accent);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Text levels */
-.text-primary {
-  color: rgb(255 255 255);
+/* Screen-reader only — search labels, etc. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
-.text-secondary {
-  color: rgb(255 255 255 / 0.7);
-}
-
-.text-tertiary {
-  color: rgb(255 255 255 / 0.45);
-}
-
-/* Safe area support for iOS */
-.safe-area-inset-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.safe-area-inset-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.pb-safe-area-inset-bottom {
-  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
-}
-
-/* Hide scrollbar for horizontal scroll */
+/* Horizontal rails — hide scrollbar, keep touch scroll */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -52,4 +39,36 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Item page hero — staggered enter (ItemPage hero only). */
+@keyframes item-hero-stagger {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.item-hero-stagger {
+  animation: item-hero-stagger 220ms ease-out forwards;
+}
+
+.item-hero-stagger--poster {
+  animation-delay: 0ms;
+}
+
+.item-hero-stagger--meta {
+  animation-delay: 40ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item-hero-stagger {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

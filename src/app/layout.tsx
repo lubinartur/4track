@@ -1,21 +1,9 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import ClientShell from "./ClientShell";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "4track",
-  description: "Track your life, films, sport, and books",
+  title: '4track',
+  description: '4track',
 };
 
 export default function RootLayout({
@@ -25,13 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0b0b0f] text-white`}
-      >
-        <ClientShell>
-          {children}
-        </ClientShell>
-      </body>
+      <body className="min-h-screen antialiased">{children}</body>
     </html>
   );
 }
