@@ -1,6 +1,11 @@
+'use client';
+
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { Check, Plus } from 'lucide-react';
 import ItemMetaRow from '@/components/item/ItemMetaRow';
+import { libraryInputFromSearchResult } from '@/lib/libraryMovieInput';
+import { useLibraryStore } from '@/store/libraryStore';
 import type { DiscoverSearchResultItem } from '@/types/discoverSearch';
 
 type SearchResultItemProps = {
@@ -19,6 +24,11 @@ function itemDetailHref(item: DiscoverSearchResultItem): string | undefined {
  */
 export default function SearchResultItem({ item }: SearchResultItemProps) {
   const href = itemDetailHref(item);
+
+  const addToQueue = useLibraryStore((s) => s.addToQueue);
+  const markWatched = useLibraryStore((s) => s.markWatched);
+  const libraryInput = useMemo(() => libraryInputFromSearchResult(item), [item]);
+  const canSave = libraryInput != null;
 
   const poster = (
     <div
@@ -81,14 +91,18 @@ export default function SearchResultItem({ item }: SearchResultItemProps) {
           >
             <button
               type="button"
-              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-[#ff5b00] px-4 text-[12px] font-normal leading-none text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] active:scale-[0.98]"
+              disabled={!canSave}
+              onClick={() => libraryInput && addToQueue(libraryInput)}
+              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-[#ff5b00] px-4 text-[12px] font-normal leading-none text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] enabled:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
             >
               <Plus size={14} strokeWidth={1.5} aria-hidden />
               Queue
             </button>
             <button
               type="button"
-              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-solid border-[#ff5b00] bg-[#101018] px-4 text-[12px] font-normal leading-none text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] active:scale-[0.98]"
+              disabled={!canSave}
+              onClick={() => libraryInput && markWatched(libraryInput)}
+              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-solid border-[#ff5b00] bg-[#101018] px-4 text-[12px] font-normal leading-none text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] enabled:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
             >
               <Check size={14} strokeWidth={1.5} aria-hidden />
               Watched

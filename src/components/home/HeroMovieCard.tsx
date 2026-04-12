@@ -1,6 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import { Check, Plus, Sparkles, Star } from 'lucide-react';
 import ItemMetaRow from '@/components/item/ItemMetaRow';
+import { libraryInputFromHomeHero } from '@/lib/libraryMovieInput';
+import { useLibraryStore } from '@/store/libraryStore';
 import type { HomeHeroContent } from '@/types/homeHero';
 
 type HeroMovieCardProps = {
@@ -15,6 +19,11 @@ type HeroMovieCardProps = {
 export default function HeroMovieCard({ hero, className }: HeroMovieCardProps) {
   const href = hero.itemSlug ? `/item/${hero.itemSlug}` : undefined;
   const [t1, t2, t3] = hero.reasonTags;
+
+  const addToQueue = useLibraryStore((s) => s.addToQueue);
+  const markWatched = useLibraryStore((s) => s.markWatched);
+  const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
+  const heroInput = libraryInputFromHomeHero(hero);
 
   return (
     <article className={['relative w-[326px] shrink-0', className].filter(Boolean).join(' ')}>
@@ -89,21 +98,27 @@ export default function HeroMovieCard({ hero, className }: HeroMovieCardProps) {
           <button
             type="button"
             aria-label="Add to list"
-            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35"
+            disabled={!heroInput}
+            onClick={() => heroInput && addToQueue(heroInput)}
+            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 enabled:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 disabled:pointer-events-none disabled:opacity-40"
           >
             <Plus size={14} strokeWidth={1.5} aria-hidden />
           </button>
           <button
             type="button"
             aria-label="Mark as watched"
-            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35"
+            disabled={!heroInput}
+            onClick={() => heroInput && markWatched(heroInput)}
+            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 enabled:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 disabled:pointer-events-none disabled:opacity-40"
           >
             <Check size={14} strokeWidth={1.5} aria-hidden />
           </button>
           <button
             type="button"
             aria-label="Favorite"
-            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35"
+            disabled={!heroInput}
+            onClick={() => heroInput && toggleFavorite(heroInput)}
+            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 enabled:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 disabled:pointer-events-none disabled:opacity-40"
           >
             <Star size={14} strokeWidth={1.5} aria-hidden />
           </button>

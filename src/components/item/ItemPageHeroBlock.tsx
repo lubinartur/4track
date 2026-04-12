@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { libraryInputFromItemDetail } from '@/lib/libraryMovieInput';
+import { useLibraryStore } from '@/store/libraryStore';
 import type { ItemDetail } from '@/types/item';
 import ItemActionRow from './ItemActionRow';
 import ItemMetaRow from './ItemMetaRow';
@@ -16,6 +18,11 @@ type ItemPageHeroBlockProps = {
 export default function ItemPageHeroBlock({ item }: ItemPageHeroBlockProps) {
   const [scrollBlend, setScrollBlend] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
+
+  const addToQueue = useLibraryStore((s) => s.addToQueue);
+  const markWatched = useLibraryStore((s) => s.markWatched);
+  const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
+  const libraryInput = useMemo(() => libraryInputFromItemDetail(item), [item]);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -64,7 +71,11 @@ export default function ItemPageHeroBlock({ item }: ItemPageHeroBlockProps) {
       </div>
 
       <div className="relative z-[1]">
-        <ItemActionRow />
+        <ItemActionRow
+          onAddToQueue={() => addToQueue(libraryInput)}
+          onMarkWatched={() => markWatched(libraryInput)}
+          onFavorite={() => toggleFavorite(libraryInput)}
+        />
       </div>
     </div>
   );
