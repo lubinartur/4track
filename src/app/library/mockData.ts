@@ -17,6 +17,9 @@ export type LibraryEntry = {
   itemSlug?: string;
   status: LibraryListStatus;
   favorite: boolean;
+  /** User star rating 1–5 after completing the rate sheet; omitted if never rated. */
+  userRating?: number;
+  tasteTags: string[];
 };
 
 /** Canonical `id` / store key = `itemSlug` or `tmdb-{id}` */
@@ -31,6 +34,7 @@ export const libraryEntries: LibraryEntry[] = [
     itemSlug: 'fight-club',
     status: 'queue',
     favorite: false,
+    tasteTags: [],
   },
   {
     id: 'the-fight',
@@ -42,6 +46,7 @@ export const libraryEntries: LibraryEntry[] = [
     itemSlug: 'the-fight',
     status: 'queue',
     favorite: false,
+    tasteTags: [],
   },
   {
     id: 'parasite',
@@ -53,6 +58,7 @@ export const libraryEntries: LibraryEntry[] = [
     itemSlug: 'parasite',
     status: 'watched',
     favorite: false,
+    tasteTags: [],
   },
   {
     id: 'burning',
@@ -64,6 +70,7 @@ export const libraryEntries: LibraryEntry[] = [
     itemSlug: 'burning',
     status: 'watched',
     favorite: false,
+    tasteTags: [],
   },
   {
     id: 'past-lives',
@@ -75,6 +82,7 @@ export const libraryEntries: LibraryEntry[] = [
     itemSlug: 'past-lives',
     status: 'watched',
     favorite: false,
+    tasteTags: [],
   },
   {
     id: 'decision-to-leave',
@@ -86,6 +94,7 @@ export const libraryEntries: LibraryEntry[] = [
     itemSlug: 'decision-to-leave',
     status: 'watched',
     favorite: true,
+    tasteTags: [],
   },
 ];
 

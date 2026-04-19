@@ -1,8 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useMemo } from 'react';
 import { Check, Plus, Sparkles, Star } from 'lucide-react';
 import ItemMetaRow from '@/components/item/ItemMetaRow';
+import { useQueueSuccessFlash } from '@/hooks/useQueueSuccessFlash';
+import { useWatchedRateSheet } from '@/hooks/useWatchedRateSheet';
+import {
+  movieActionFocusRing,
+  movieActionPress,
+  movieActionTransition,
+} from '@/lib/movieActionAppearance';
+import { libraryActionFlags } from '@/lib/libraryActionUi';
 import { libraryInputFromHomeHero } from '@/lib/libraryMovieInput';
 import { useLibraryStore } from '@/store/libraryStore';
 import type { HomeHeroContent } from '@/types/homeHero';
@@ -21,9 +30,21 @@ export default function HeroMovieCard({ hero, className }: HeroMovieCardProps) {
   const [t1, t2, t3] = hero.reasonTags;
 
   const addToQueue = useLibraryStore((s) => s.addToQueue);
-  const markWatched = useLibraryStore((s) => s.markWatched);
+  const { openWatchedRateSheet } = useWatchedRateSheet();
+  const { queueSuccessFlash, triggerQueueSuccessFlash } = useQueueSuccessFlash();
   const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
   const heroInput = libraryInputFromHomeHero(hero);
+  const entry = useLibraryStore((s) => (heroInput ? s.entriesByKey[heroInput.key] : undefined));
+  const flags = useMemo(() => libraryActionFlags(entry), [entry]);
+
+  const iconBtn = [
+    'flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white',
+    movieActionTransition,
+    movieActionPress,
+    'hover:brightness-110',
+    movieActionFocusRing,
+    'disabled:pointer-events-none disabled:opacity-40',
+  ].join(' ');
 
   return (
     <article className={['relative w-[326px] shrink-0', className].filter(Boolean).join(' ')}>
@@ -97,30 +118,60 @@ export default function HeroMovieCard({ hero, className }: HeroMovieCardProps) {
         <div className="pointer-events-auto absolute bottom-[18px] left-1/2 z-[4] mt-5 flex -translate-x-1/2 gap-[13px]">
           <button
             type="button"
-            aria-label="Add to list"
+            aria-label={flags.inQueue ? 'In queue' : 'Add to queue'}
+            aria-pressed={flags.inQueue}
             disabled={!heroInput}
-            onClick={() => heroInput && addToQueue(heroInput)}
-            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 enabled:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 disabled:pointer-events-none disabled:opacity-40"
+            onClick={() => {
+              if (!heroInput) return;
+              addToQueue(heroInput);
+              triggerQueueSuccessFlash();
+            }}
+            className={iconBtn}
           >
-            <Plus size={14} strokeWidth={1.5} aria-hidden />
+            <span className="inline-flex origin-center" aria-hidden>
+              {queueSuccessFlash ? (
+                <Check size={14} strokeWidth={1.5} className="text-[#ff5b00]" />
+              ) : (
+                <Plus
+                  size={14}
+                  strokeWidth={1.5}
+                  className={flags.inQueue ? 'text-[#ff5b00]' : 'text-white'}
+                />
+              )}
+            </span>
           </button>
           <button
             type="button"
-            aria-label="Mark as watched"
+            aria-label={flags.watched ? 'Watched' : 'Mark as watched'}
+            aria-pressed={flags.watched}
             disabled={!heroInput}
-            onClick={() => heroInput && markWatched(heroInput)}
-            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 enabled:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 disabled:pointer-events-none disabled:opacity-40"
+            onClick={() => heroInput && openWatchedRateSheet(heroInput)}
+            className={iconBtn}
           >
-            <Check size={14} strokeWidth={1.5} aria-hidden />
+            <Check
+              size={14}
+              strokeWidth={1.5}
+              className={flags.watched ? 'text-[#ff5b00]' : 'text-white'}
+              aria-hidden
+            />
           </button>
           <button
             type="button"
-            aria-label="Favorite"
+            aria-label={flags.favorited ? 'Favorited' : 'Favorite'}
+            aria-pressed={flags.favorited}
             disabled={!heroInput}
             onClick={() => heroInput && toggleFavorite(heroInput)}
-            className="flex h-10 w-[57px] shrink-0 items-center justify-center rounded-xl border border-[#ff5b00] bg-[#101018] text-white transition-[transform,opacity] duration-[170ms] ease-out hover:opacity-95 enabled:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 disabled:pointer-events-none disabled:opacity-40"
+            className={[
+              iconBtn,
+              flags.favorited ? 'bg-[#1a1410] ring-1 ring-inset ring-[#ff5b00]/30' : '',
+            ].join(' ')}
           >
-            <Star size={14} strokeWidth={1.5} aria-hidden />
+            <Star
+              size={14}
+              strokeWidth={1.5}
+              className={flags.favorited ? 'fill-[#ff5b00] text-[#ff5b00]' : undefined}
+              aria-hidden
+            />
           </button>
         </div>
       </div>

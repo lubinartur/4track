@@ -2,8 +2,16 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus, Star } from 'lucide-react';
 import ItemMetaRow from '@/components/item/ItemMetaRow';
+import { useQueueSuccessFlash } from '@/hooks/useQueueSuccessFlash';
+import { useWatchedRateSheet } from '@/hooks/useWatchedRateSheet';
+import {
+  movieActionFocusRing,
+  movieActionPress,
+  movieActionTransition,
+} from '@/lib/movieActionAppearance';
+import { libraryActionFlags } from '@/lib/libraryActionUi';
 import { libraryInputFromSearchResult } from '@/lib/libraryMovieInput';
 import { useLibraryStore } from '@/store/libraryStore';
 import type { DiscoverSearchResultItem } from '@/types/discoverSearch';
@@ -18,17 +26,32 @@ function itemDetailHref(item: DiscoverSearchResultItem): string | undefined {
   return undefined;
 }
 
+const iconActionBtn = [
+  'inline-flex size-11 shrink-0 items-center justify-center rounded-[12px] border border-solid border-[#ff5b00] bg-[#101018]',
+  movieActionTransition,
+  movieActionPress,
+  movieActionFocusRing,
+  'focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620]',
+  'disabled:pointer-events-none disabled:opacity-40',
+].join(' ');
+
 /**
- * Discover Search row — poster, title, meta, Queue + Watched.
+ * Discover Search row — poster, title, meta, compact icon actions (queue / watched / favorite).
  * Row `Link` only when there is a resolvable item route (curated slug or `tmdb-{id}`); otherwise no dead tap target.
  */
 export default function SearchResultItem({ item }: SearchResultItemProps) {
   const href = itemDetailHref(item);
 
   const addToQueue = useLibraryStore((s) => s.addToQueue);
-  const markWatched = useLibraryStore((s) => s.markWatched);
+  const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
+  const { openWatchedRateSheet } = useWatchedRateSheet();
+  const { queueSuccessFlash, triggerQueueSuccessFlash } = useQueueSuccessFlash();
   const libraryInput = useMemo(() => libraryInputFromSearchResult(item), [item]);
   const canSave = libraryInput != null;
+  const entry = useLibraryStore((s) =>
+    libraryInput ? s.entriesByKey[libraryInput.key] : undefined,
+  );
+  const flags = useMemo(() => libraryActionFlags(entry), [entry]);
 
   const poster = (
     <div
@@ -49,6 +72,8 @@ export default function SearchResultItem({ item }: SearchResultItemProps) {
       )}
     </div>
   );
+
+  const queueIconOrange = flags.inQueue || queueSuccessFlash;
 
   return (
     <article className="relative flex w-full max-w-[358px] flex-nowrap items-center gap-4 pr-4">
@@ -92,20 +117,57 @@ export default function SearchResultItem({ item }: SearchResultItemProps) {
             <button
               type="button"
               disabled={!canSave}
-              onClick={() => libraryInput && addToQueue(libraryInput)}
-              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-[#ff5b00] px-4 text-[12px] font-normal leading-none text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] enabled:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
+              aria-label="Add to queue"
+              aria-pressed={flags.inQueue || queueSuccessFlash}
+              onClick={() => {
+                if (!libraryInput) return;
+                addToQueue(libraryInput);
+                triggerQueueSuccessFlash();
+              }}
+              className={iconActionBtn}
             >
-              <Plus size={14} strokeWidth={1.5} aria-hidden />
-              Queue
+              {queueSuccessFlash ? (
+                <Check size={14} strokeWidth={1.5} className="text-[#ff5b00]" aria-hidden />
+              ) : (
+                <Plus
+                  size={14}
+                  strokeWidth={1.5}
+                  className={queueIconOrange ? 'text-[#ff5b00]' : 'text-white'}
+                  aria-hidden
+                />
+              )}
             </button>
             <button
               type="button"
               disabled={!canSave}
-              onClick={() => libraryInput && markWatched(libraryInput)}
-              className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-solid border-[#ff5b00] bg-[#101018] px-4 text-[12px] font-normal leading-none text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] enabled:active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
+              aria-label="Mark as watched"
+              aria-pressed={flags.watched}
+              onClick={() => libraryInput && openWatchedRateSheet(libraryInput)}
+              className={iconActionBtn}
             >
-              <Check size={14} strokeWidth={1.5} aria-hidden />
-              Watched
+              <Check
+                size={14}
+                strokeWidth={1.5}
+                className={flags.watched ? 'text-[#ff5b00]' : 'text-white'}
+                aria-hidden
+              />
+            </button>
+            <button
+              type="button"
+              disabled={!canSave}
+              aria-label="Toggle favorite"
+              aria-pressed={flags.favorited}
+              onClick={() => libraryInput && toggleFavorite(libraryInput)}
+              className={iconActionBtn}
+            >
+              <Star
+                size={14}
+                strokeWidth={1.5}
+                className={
+                  flags.favorited ? 'fill-[#ff5b00] text-[#ff5b00]' : 'text-white'
+                }
+                aria-hidden
+              />
             </button>
           </div>
         </div>

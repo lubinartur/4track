@@ -18,6 +18,11 @@ body {
   color: var(--foreground);
 }
 
+/* iOS webview: allow layouts to opt into safe-area padding. */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Screen-reader only — search labels, etc. */
 .sr-only {
   position: absolute;

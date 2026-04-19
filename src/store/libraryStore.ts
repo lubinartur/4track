@@ -13,7 +13,11 @@ function seedRecord(): Record<string, LibraryEntry> {
   return o;
 }
 
-function buildEntry(input: LibraryMovieInput, patch: Partial<LibraryEntry>): LibraryEntry {
+function buildEntry(
+  input: LibraryMovieInput,
+  patch: Partial<LibraryEntry>,
+  prev?: LibraryEntry | null,
+): LibraryEntry {
   return {
     id: input.key,
     title: input.title,
@@ -22,8 +26,11 @@ function buildEntry(input: LibraryMovieInput, patch: Partial<LibraryEntry>): Lib
     genresLabel: input.genresLabel,
     posterUrl: input.posterUrl,
     itemSlug: input.itemSlug ?? (input.key.startsWith('tmdb-') ? undefined : input.key),
-    status: patch.status ?? 'queue',
-    favorite: patch.favorite ?? false,
+    status: patch.status ?? prev?.status ?? 'queue',
+    favorite: patch.favorite ?? prev?.favorite ?? false,
+    userRating:
+      patch.userRating !== undefined ? patch.userRating : prev?.userRating,
+    tasteTags: patch.tasteTags !== undefined ? patch.tasteTags : (prev?.tasteTags ?? []),
   };
 }
 
@@ -31,6 +38,11 @@ type LibraryStoreState = {
   entriesByKey: Record<string, LibraryEntry>;
   addToQueue: (input: LibraryMovieInput) => void;
   markWatched: (input: LibraryMovieInput) => void;
+  /** Completes the rate flow: watched + user stars + taste tags (preserves favorite, moves queue → watched). */
+  saveRatedWatched: (
+    input: LibraryMovieInput,
+    payload: { userRating: number; tasteTags: string[] },
+  ) => void;
   toggleFavorite: (input: LibraryMovieInput) => void;
   removeFromLibrary: (key: string) => void;
 };
@@ -45,10 +57,7 @@ export const useLibraryStore = create<LibraryStoreState>()(
         set({
           entriesByKey: {
             ...get().entriesByKey,
-            [input.key]: buildEntry(input, {
-              status: 'queue',
-              favorite: prev?.favorite ?? false,
-            }),
+            [input.key]: buildEntry(input, { status: 'queue' }, prev),
           },
         });
       },
@@ -58,10 +67,25 @@ export const useLibraryStore = create<LibraryStoreState>()(
         set({
           entriesByKey: {
             ...get().entriesByKey,
-            [input.key]: buildEntry(input, {
-              status: 'watched',
-              favorite: prev?.favorite ?? false,
-            }),
+            [input.key]: buildEntry(input, { status: 'watched' }, prev),
+          },
+        });
+      },
+
+      saveRatedWatched(input, { userRating, tasteTags }) {
+        const prev = get().entriesByKey[input.key];
+        set({
+          entriesByKey: {
+            ...get().entriesByKey,
+            [input.key]: buildEntry(
+              input,
+              {
+                status: 'watched',
+                userRating,
+                tasteTags,
+              },
+              prev,
+            ),
           },
         });
       },
@@ -73,7 +97,7 @@ export const useLibraryStore = create<LibraryStoreState>()(
         set({
           entriesByKey: {
             ...get().entriesByKey,
-            [input.key]: buildEntry(input, { status, favorite }),
+            [input.key]: buildEntry(input, { status, favorite }, prev),
           },
         });
       },
@@ -87,7 +111,19 @@ export const useLibraryStore = create<LibraryStoreState>()(
       name: '4track-library',
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ entriesByKey: s.entriesByKey }),
-      version: 1,
+      version: 2,
+      migrate: (persisted, fromVersion) => {
+        const p = persisted as { entriesByKey?: Record<string, LibraryEntry> } | undefined;
+        if (fromVersion < 2 && p?.entriesByKey) {
+          for (const key of Object.keys(p.entriesByKey)) {
+            const e = p.entriesByKey[key];
+            if (e && !Array.isArray(e.tasteTags)) {
+              e.tasteTags = [];
+            }
+          }
+        }
+        return p as typeof persisted;
+      },
       merge: (persisted, current) => {
         const p = persisted as Partial<LibraryStoreState> | undefined;
         return {

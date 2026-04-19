@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useQueueSuccessFlash } from '@/hooks/useQueueSuccessFlash';
+import { useWatchedRateSheet } from '@/hooks/useWatchedRateSheet';
+import { libraryActionFlags } from '@/lib/libraryActionUi';
 import { libraryInputFromItemDetail } from '@/lib/libraryMovieInput';
 import { useLibraryStore } from '@/store/libraryStore';
 import type { ItemDetail } from '@/types/item';
@@ -20,9 +23,12 @@ export default function ItemPageHeroBlock({ item }: ItemPageHeroBlockProps) {
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const addToQueue = useLibraryStore((s) => s.addToQueue);
-  const markWatched = useLibraryStore((s) => s.markWatched);
   const toggleFavorite = useLibraryStore((s) => s.toggleFavorite);
+  const { openWatchedRateSheet } = useWatchedRateSheet();
+  const { queueSuccessFlash, triggerQueueSuccessFlash } = useQueueSuccessFlash();
   const libraryInput = useMemo(() => libraryInputFromItemDetail(item), [item]);
+  const entry = useLibraryStore((s) => s.entriesByKey[libraryInput.key]);
+  const actionFlags = useMemo(() => libraryActionFlags(entry), [entry]);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -72,9 +78,16 @@ export default function ItemPageHeroBlock({ item }: ItemPageHeroBlockProps) {
 
       <div className="relative z-[1]">
         <ItemActionRow
-          onAddToQueue={() => addToQueue(libraryInput)}
-          onMarkWatched={() => markWatched(libraryInput)}
+          onAddToQueue={() => {
+            addToQueue(libraryInput);
+            triggerQueueSuccessFlash();
+          }}
+          onMarkWatched={() => openWatchedRateSheet(libraryInput)}
           onFavorite={() => toggleFavorite(libraryInput)}
+          inQueue={actionFlags.inQueue}
+          watched={actionFlags.watched}
+          favoriteActive={actionFlags.favorited}
+          queueSuccessFlash={queueSuccessFlash}
         />
       </div>
     </div>

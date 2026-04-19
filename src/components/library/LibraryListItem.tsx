@@ -5,7 +5,16 @@ import { useMemo } from 'react';
 import { Check, Trash2 } from 'lucide-react';
 import ItemMetaRow from '@/components/item/ItemMetaRow';
 import type { LibraryEntry } from '@/app/library/mockData';
+import { useWatchedRateSheet } from '@/hooks/useWatchedRateSheet';
+import { libraryActionFlags } from '@/lib/libraryActionUi';
 import { libraryInputFromEntry } from '@/lib/libraryMovieInput';
+import {
+  movieActionFocusRing,
+  movieActionPress,
+  movieActionTransition,
+  watchedButtonLabel,
+} from '@/lib/movieActionAppearance';
+import { shouldOpenRateSheetForLibraryWatched } from '@/lib/libraryWatchedSheet';
 import { useLibraryStore } from '@/store/libraryStore';
 
 type LibraryListItemProps = {
@@ -24,9 +33,10 @@ function itemHref(entry: LibraryEntry): string | undefined {
 export default function LibraryListItem({ entry }: LibraryListItemProps) {
   const href = itemHref(entry);
 
-  const markWatched = useLibraryStore((s) => s.markWatched);
+  const { openWatchedRateSheet } = useWatchedRateSheet();
   const removeFromLibrary = useLibraryStore((s) => s.removeFromLibrary);
   const libraryInput = useMemo(() => libraryInputFromEntry(entry), [entry]);
+  const flags = useMemo(() => libraryActionFlags(entry), [entry]);
 
   const poster = (
     <div
@@ -91,17 +101,42 @@ export default function LibraryListItem({ entry }: LibraryListItemProps) {
           >
             <button
               type="button"
-              onClick={() => markWatched(libraryInput)}
-              className="inline-flex h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-[12px] bg-[#ff5b00] px-4 py-2.5 text-[12px] font-normal leading-none text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] active:scale-[0.98]"
+              aria-pressed={flags.watched}
+              disabled={flags.watched}
+              onClick={() => {
+                if (!shouldOpenRateSheetForLibraryWatched(entry)) return;
+                openWatchedRateSheet(libraryInput);
+              }}
+              className={[
+                'inline-flex h-[44px] shrink-0 items-center gap-2 whitespace-nowrap rounded-[12px] border border-solid px-4 py-2.5 text-[12px] font-normal leading-none',
+                movieActionTransition,
+                movieActionPress,
+                movieActionFocusRing,
+                'focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620]',
+                flags.watched
+                  ? 'cursor-default border-[#ff5b00]/45 bg-[#101018] text-[#ff5b00] ring-1 ring-inset ring-[#ff5b00]/20 disabled:opacity-100'
+                  : 'border-[#ff5b00] bg-[#101018] text-white hover:bg-[#14141c] focus-visible:ring-[#ff5b00]/45 disabled:pointer-events-none disabled:opacity-40',
+              ].join(' ')}
             >
-              <Check size={14} strokeWidth={1.5} className="shrink-0" aria-hidden />
-              Watched
+              <Check
+                size={14}
+                strokeWidth={1.5}
+                className={['shrink-0', flags.watched ? 'text-[#ff5b00]' : 'text-white'].join(' ')}
+                aria-hidden
+              />
+              {watchedButtonLabel(flags.watched)}
             </button>
             <button
               type="button"
               aria-label={`Remove ${entry.title} from library`}
               onClick={() => removeFromLibrary(entry.id)}
-              className="inline-flex h-[44px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[12px] border border-solid border-[#ff5b00] bg-[#101018] px-4 py-2.5 text-white transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff5b00]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620] active:scale-[0.98]"
+              className={[
+                'inline-flex h-[44px] shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[12px] border border-solid border-[#ff5b00] bg-[#101018] px-4 py-2.5 text-white',
+                movieActionTransition,
+                movieActionPress,
+                movieActionFocusRing,
+                'hover:bg-[#14141c] focus-visible:ring-offset-2 focus-visible:ring-offset-[#161620]',
+              ].join(' ')}
             >
               <Trash2 size={14} strokeWidth={1.5} aria-hidden />
             </button>
