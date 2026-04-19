@@ -16,7 +16,7 @@ export default function DiscoverPage() {
     <div className="relative mx-auto min-h-screen w-full max-w-[390px] overflow-hidden bg-[#161620]">
       <AppBackgroundLighting />
 
-      <div className="relative z-[1] flex flex-col px-4 pb-40 pt-3">
+      <div className="app-page-safe-top relative z-[1] flex flex-col px-4 pb-40">
         <main className="contents">
           <DiscoverHero
             activeTab={activeTab}

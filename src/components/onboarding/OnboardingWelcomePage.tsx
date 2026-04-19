@@ -12,9 +12,9 @@ export default function OnboardingWelcomePage() {
     <div className="relative mx-auto min-h-screen w-full max-w-[390px] overflow-hidden bg-[#161620]">
       <AppBackgroundLighting />
 
-      <div className="relative z-[1] flex min-h-screen flex-col px-4 pb-0 pt-0">
+      <div className="app-page-safe-top relative z-[1] flex min-h-screen flex-col px-4 pb-0">
         <main className="flex flex-1 flex-col">
-          <div className="mt-[63px] w-full max-w-[358px] text-[32px] font-bold leading-normal text-white">
+          <div className="mt-0 w-full max-w-[358px] text-[32px] font-bold leading-normal text-white">
             <p className="m-0">Your taste has a</p>
             <p className="m-0 text-[#ff5b00]">pattern.</p>
           </div>

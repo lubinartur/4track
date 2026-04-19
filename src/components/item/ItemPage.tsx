@@ -18,7 +18,7 @@ export default function ItemPage({ item }: ItemPageProps) {
       <AppBackgroundLighting />
       <ItemBackdrop posterUrl={item.posterUrl} alt="" />
 
-      <div className="relative z-[1] flex flex-col px-4 pb-40 pt-3">
+      <div className="app-page-safe-top relative z-[1] flex flex-col px-4 pb-40">
         <ItemPageHeroBlock item={item} />
 
         <section className="mt-10" aria-labelledby="item-overview-heading">

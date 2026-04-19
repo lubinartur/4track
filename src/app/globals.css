@@ -5,6 +5,7 @@
   --background: #0b0b0f;
   --foreground: #ffffff;
   --accent: #f97316;
+  --app-safe-top-offset: 20px;
 }
 
 @theme inline {
@@ -19,8 +20,17 @@ body {
 }
 
 /* iOS webview: allow layouts to opt into safe-area padding. */
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
+}
+
 .safe-area-inset-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Standard screen top rhythm: safe area + breathing space. */
+.app-page-safe-top {
+  padding-top: max(calc(env(safe-area-inset-top) + 24px), 80px);
 }
 
 /* Screen-reader only — search labels, etc. */

@@ -24,9 +24,9 @@ export default function HomePage() {
     <div className="relative mx-auto min-h-screen w-full max-w-[390px] overflow-x-visible bg-[#161620]">
       <AppBackgroundLighting />
 
-      <div className="relative z-[1] flex flex-col px-4 pb-44 pt-3">
+      <div className="app-page-safe-top relative z-[1] flex flex-col px-4 pb-44">
         <main className="contents">
-          <h1 className="mt-5 text-[32px] font-bold leading-none tracking-normal text-white">
+          <h1 className="mt-0 text-[32px] font-bold leading-none tracking-normal text-white">
             Hello, ar4
           </h1>
 

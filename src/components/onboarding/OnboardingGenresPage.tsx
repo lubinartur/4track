@@ -21,9 +21,9 @@ export default function OnboardingGenresPage() {
     <div className="relative mx-auto min-h-screen w-full max-w-[390px] overflow-hidden bg-[#161620]">
       <AppBackgroundLighting />
 
-      <div className="relative z-[1] flex min-h-screen flex-col px-4 pb-0 pt-0">
+      <div className="app-page-safe-top relative z-[1] flex min-h-screen flex-col px-4 pb-0">
         <main className="flex flex-1 flex-col">
-          <div className="mt-[63px] text-[32px] font-bold leading-normal text-white">
+          <div className="mt-0 text-[32px] font-bold leading-normal text-white">
             <p className="m-0">
               Pick your <span className="text-[#ff5b00]">favorite</span>
             </p>

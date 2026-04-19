@@ -5,9 +5,8 @@ const config: CapacitorConfig = {
   appName: '4Track',
   webDir: 'capacitor-web',
   server: {
-    url: 'http://192.168.1.187:3000',
-    cleartext: true,
-    allowNavigation: ['192.168.1.187'],
+    url: 'https://4track-gamma.vercel.app',
+    allowNavigation: ['4track-gamma.vercel.app'],
   },
 };
 

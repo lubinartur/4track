@@ -22,9 +22,9 @@ export default function LibraryPage() {
     <div className="relative mx-auto min-h-screen w-full max-w-[390px] overflow-hidden bg-[#161620]">
       <AppBackgroundLighting />
 
-      <div className="relative z-[1] flex flex-col px-4 pb-40 pt-3">
+      <div className="app-page-safe-top relative z-[1] flex flex-col px-4 pb-40">
         <main className="flex flex-col">
-          <h1 className="mt-5 text-[32px] font-bold leading-none tracking-normal text-white">Library</h1>
+          <h1 className="mt-0 text-[32px] font-bold leading-none tracking-normal text-white">Library</h1>
 
           <LibraryTabs activeTab={activeTab} counts={counts} onTabChange={setActiveTab} />
 

@@ -39,7 +39,7 @@ export default function DiscoverHero({
 }: DiscoverHeroProps) {
   return (
     <>
-      <h1 className="mt-5 text-[32px] font-bold leading-none tracking-normal text-white">
+      <h1 className="mt-0 text-[32px] font-bold leading-none tracking-normal text-white">
         Discover
       </h1>
 

@@ -35,9 +35,9 @@ export default function OnboardingMovieRatePage() {
     <div className="relative mx-auto min-h-screen w-full max-w-[390px] overflow-hidden bg-[#161620]">
       <AppBackgroundLighting />
 
-      <div className="relative z-[1] flex min-h-screen flex-col px-4 pb-0 pt-0">
+      <div className="app-page-safe-top relative z-[1] flex min-h-screen flex-col px-4 pb-0">
         <main className="flex flex-1 flex-col">
-          <h1 className="mt-[63px] text-[32px] font-bold leading-normal text-white">Tell us what you like</h1>
+          <h1 className="mt-0 text-[32px] font-bold leading-normal text-white">Tell us what you like</h1>
           <p className="mt-4 w-full max-w-[358px] text-[20px] font-normal leading-normal text-white">
             Rate a few movies to train your recommendations
           </p>
